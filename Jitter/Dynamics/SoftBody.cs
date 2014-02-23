@@ -104,8 +104,6 @@ namespace Jitter.Dynamics
 
             bool skipConstraint = false;
 
-            float myCounter = 0.0f;
-
             /// <summary>
             /// Called once before iteration starts.
             /// </summary>
@@ -496,7 +494,6 @@ namespace Jitter.Dynamics
                 JVector v3 = points[t.indices.I2].position;
 
                 JVector cross = (v3 - v1) % (v2 - v1);
-                JVector center = (v1 + v2 + v3) * (1.0f / 3.0f);
 
                 points[t.indices.I0].AddForce(invVolume * cross * pressure);
                 points[t.indices.I1].AddForce(invVolume * cross * pressure);

@@ -152,8 +152,6 @@ namespace Jitter.Collision.Shapes
                 activeTriList.Push(tri);
             }
 
-            List<JVector> pointSet = new List<JVector>();
-
             // surfaceTriList
             while (activeTriList.Count > 0)
             {

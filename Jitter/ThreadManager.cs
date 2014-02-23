@@ -39,7 +39,9 @@ namespace Jitter
 
         public const int ThreadsPerProcessor = 1;
 
+#if XBOX 
         private readonly int[] xBoxMap = new int[] { 1, 3, 4, 5 };
+#endif
 
         private ManualResetEvent waitHandleA, waitHandleB;
         private ManualResetEvent currentWaitHandle;

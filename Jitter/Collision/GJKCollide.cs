@@ -654,7 +654,6 @@ namespace Jitter.Collision
                             //closest point origin from line segment
                             JVector from = _simplexVectorW[0];
                             JVector to = _simplexVectorW[1];
-                            JVector nearest;
 
                             JVector diff = from * (-1);
                             JVector v = to - from;
@@ -686,7 +685,6 @@ namespace Jitter.Collision
                             }
 
                             _cachedBC.SetBarycentricCoordinates(1 - t, t, 0, 0);
-                            nearest = from + t * v;
 
                             _cachedPA = _simplexPointsP[0] + t * (_simplexPointsP[1] - _simplexPointsP[0]);
                             _cachedPB = _simplexPointsQ[0] + t * (_simplexPointsQ[1] - _simplexPointsQ[0]);
