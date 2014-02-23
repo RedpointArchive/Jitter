@@ -49,7 +49,7 @@ namespace Jitter.Dynamics.Joints
         /// <param name="body2">The second body connected to the first one.</param>
         /// <param name="position">The position in world space where both bodies get connected.</param>
         /// <param name="hingeAxis">The axis if the hinge.</param>
-        public HingeJoint(World world, RigidBody body1, RigidBody body2, JVector position, JVector hingeAxis) : base(world)
+        public HingeJoint(JitterWorld world, RigidBody body1, RigidBody body2, JVector position, JVector hingeAxis) : base(world)
         {
             worldPointConstraint = new PointOnPoint[2];
 

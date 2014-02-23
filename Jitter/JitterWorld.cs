@@ -38,7 +38,7 @@ namespace Jitter
     /// This class brings 'dynamics' and 'collisions' together. It handles
     /// all bodies and constraints.
     /// </summary>
-    public class World
+    public class JitterWorld
     {
         public delegate void WorldStep(float timestep);
 
@@ -197,7 +197,7 @@ namespace Jitter
         /// collisions. See for example: <see cref="CollisionSystemSAP"/>
         /// or <see cref="CollisionSystemBrute"/>.
         /// </param>
-        public World(CollisionSystem collision)
+        public JitterWorld(CollisionSystem collision)
         {
             if (collision == null)
                 throw new ArgumentNullException("The CollisionSystem can't be null.", "collision");

@@ -38,14 +38,14 @@ namespace Jitter.Dynamics.Joints
         /// The world class to which the internal constraints
         /// should be added.
         /// </summary>
-        public World World { get; private set; }
+        public JitterWorld World { get; private set; }
 
         /// <summary>
         /// Creates a new instance of the Joint class.
         /// </summary>
         /// <param name="world">The world class to which the internal constraints
         /// should be added.</param>
-        public Joint(World world) {this.World = world;}
+        public Joint(JitterWorld world) {this.World = world;}
 
         /// <summary>
         /// Adds the internal constraints of this joint to the world class.

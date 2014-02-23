@@ -44,14 +44,14 @@ namespace Jitter.Dynamics.Joints
         public FixedAngle FixedAngleConstraint { get { return fixedAngle; } }
         public PointOnLine PointOnLineConstraint { get { return pointOnLine; } }
 
-        public PrismaticJoint(World world, RigidBody body1, RigidBody body2)
+        public PrismaticJoint(JitterWorld world, RigidBody body1, RigidBody body2)
             : base(world)
         {
             fixedAngle = new FixedAngle(body1, body2);
             pointOnLine = new PointOnLine(body1, body2, body1.position, body2.position);
         }
 
-        public PrismaticJoint(World world, RigidBody body1, RigidBody body2,float minimumDistance, float maximumDistance)
+        public PrismaticJoint(JitterWorld world, RigidBody body1, RigidBody body2,float minimumDistance, float maximumDistance)
             : base(world)
         {
             fixedAngle = new FixedAngle(body1, body2);
@@ -67,7 +67,7 @@ namespace Jitter.Dynamics.Joints
         }
 
 
-        public PrismaticJoint(World world, RigidBody body1, RigidBody body2, JVector pointOnBody1,JVector pointOnBody2)
+        public PrismaticJoint(JitterWorld world, RigidBody body1, RigidBody body2, JVector pointOnBody1,JVector pointOnBody2)
             : base(world)
         {
             fixedAngle = new FixedAngle(body1, body2);
@@ -75,7 +75,7 @@ namespace Jitter.Dynamics.Joints
         }
 
 
-        public PrismaticJoint(World world, RigidBody body1, RigidBody body2, JVector pointOnBody1, JVector pointOnBody2, float maximumDistance, float minimumDistance)
+        public PrismaticJoint(JitterWorld world, RigidBody body1, RigidBody body2, JVector pointOnBody1, JVector pointOnBody2, float maximumDistance, float minimumDistance)
             : base(world)
         {
             fixedAngle = new FixedAngle(body1, body2);
