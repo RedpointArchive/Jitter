@@ -3,6 +3,11 @@
   <References>
     <Reference Include="System" />
   </References>
+  <Services>
+    <Service Name="Default">
+      <DefaultForRoot>True</DefaultForRoot>
+    </Service>
+  </Services>
   <Files>
     <Compile Include="Collision\CollisionIsland.cs" />
     <Compile Include="Collision\CollisionSystem.cs" />
