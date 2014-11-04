@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ExternalProject Name="Jitter">
+
+  <Binary Name="Jitter" Path="Jitter/Jitter.dll" />
+
+</ExternalProject>
