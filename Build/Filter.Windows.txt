@@ -1,6 +1,0 @@
-include ^Jitter/bin/Windows/AnyCPU/Debug/Jitter\.dll$
-include ^Build/Jitter\.Publish\.definition$
-include ^Build/Module\.xml$
-
-rewrite ^Jitter/bin/Windows/AnyCPU/Debug/Jitter\.dll$ Jitter/Jitter.dll
-rewrite ^Build/Jitter\.Publish\.definition$ Build/Projects/Jitter.definition
