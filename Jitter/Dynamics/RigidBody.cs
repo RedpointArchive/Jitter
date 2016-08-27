@@ -650,6 +650,8 @@ namespace Jitter.Dynamics
             }
         }
 
+        public bool PureCollider { get; set; }
+
         private List<JVector> hullPoints = new List<JVector>();
 
         private void UpdateHullData()

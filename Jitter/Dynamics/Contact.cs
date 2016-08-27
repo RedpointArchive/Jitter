@@ -188,6 +188,7 @@ namespace Jitter.Dynamics
             //return;
 
             if (treatBody1AsStatic && treatBody2AsStatic) return;
+            if (body1.PureCollider || body2.PureCollider) return;
 
             float dvx, dvy, dvz;
 
