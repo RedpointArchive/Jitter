@@ -2,6 +2,7 @@
 <Project Name="Jitter" Path="Jitter" Type="Library">
   <References>
     <Reference Include="System" />
+    <Reference Include="System.Core" />
   </References>
   <Files>
     <Compile Include="Collision\CollisionIsland.cs" />
