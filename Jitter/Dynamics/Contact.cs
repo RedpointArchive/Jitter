@@ -40,6 +40,7 @@ namespace Jitter.Dynamics
         internal float minVelocity = 0.001f;
         internal float allowedPenetration = 0.01f;
         internal float breakThreshold = 0.01f;
+        internal Func<RigidBody, RigidBody, bool> considerAngularVelocityCallback = null;
 
         internal MaterialCoefficientMixingType materialMode = MaterialCoefficientMixingType.UseAverage;
 
@@ -54,6 +55,12 @@ namespace Jitter.Dynamics
         public float BreakThreshold { get { return breakThreshold; } set { breakThreshold = value; } }
 
         public MaterialCoefficientMixingType MaterialCoefficientMixing { get { return materialMode; } set { materialMode = value; } }
+
+        public Func<RigidBody, RigidBody, bool> ConsiderAngularVelocityCallback
+        {
+            get { return considerAngularVelocityCallback; }
+            set { considerAngularVelocityCallback = value; }
+        }
     }
     #endregion
 
@@ -89,6 +96,7 @@ namespace Jitter.Dynamics
         private bool treatBody1AsStatic = false;
         private bool treatBody2AsStatic = false;
 
+        private bool considerAngularVelocity = true;
 
         bool body1IsMassPoint; bool body2IsMassPoint;
 
@@ -195,19 +203,22 @@ namespace Jitter.Dynamics
             dvx = body2.linearVelocity.X - body1.linearVelocity.X;
             dvy = body2.linearVelocity.Y - body1.linearVelocity.Y;
             dvz = body2.linearVelocity.Z - body1.linearVelocity.Z;
-
-            if (!body1IsMassPoint)
+            
+            if (considerAngularVelocity)
             {
-                dvx = dvx - (body1.angularVelocity.Y * relativePos1.Z) + (body1.angularVelocity.Z * relativePos1.Y);
-                dvy = dvy - (body1.angularVelocity.Z * relativePos1.X) + (body1.angularVelocity.X * relativePos1.Z);
-                dvz = dvz - (body1.angularVelocity.X * relativePos1.Y) + (body1.angularVelocity.Y * relativePos1.X);
-            }
+                if (!body1IsMassPoint)
+                {
+                    dvx = dvx - (body1.angularVelocity.Y * relativePos1.Z) + (body1.angularVelocity.Z * relativePos1.Y);
+                    dvy = dvy - (body1.angularVelocity.Z * relativePos1.X) + (body1.angularVelocity.X * relativePos1.Z);
+                    dvz = dvz - (body1.angularVelocity.X * relativePos1.Y) + (body1.angularVelocity.Y * relativePos1.X);
+                }
 
-            if (!body2IsMassPoint)
-            {
-                dvx = dvx + (body2.angularVelocity.Y * relativePos2.Z) - (body2.angularVelocity.Z * relativePos2.Y);
-                dvy = dvy + (body2.angularVelocity.Z * relativePos2.X) - (body2.angularVelocity.X * relativePos2.Z);
-                dvz = dvz + (body2.angularVelocity.X * relativePos2.Y) - (body2.angularVelocity.Y * relativePos2.X);
+                if (!body2IsMassPoint)
+                {
+                    dvx = dvx + (body2.angularVelocity.Y * relativePos2.Z) - (body2.angularVelocity.Z * relativePos2.Y);
+                    dvy = dvy + (body2.angularVelocity.Z * relativePos2.X) - (body2.angularVelocity.X * relativePos2.Z);
+                    dvz = dvz + (body2.angularVelocity.X * relativePos2.Y) - (body2.angularVelocity.Y * relativePos2.X);
+                }
             }
 
             // this gets us some performance
@@ -245,7 +256,7 @@ namespace Jitter.Dynamics
                 body1.linearVelocity.Y -= (impulse.Y * body1.inverseMass);
                 body1.linearVelocity.Z -= (impulse.Z * body1.inverseMass);
 
-                if (!body1IsMassPoint)
+                if (!body1IsMassPoint && considerAngularVelocity)
                 {
                     float num0, num1, num2;
                     num0 = relativePos1.Y * impulse.Z - relativePos1.Z * impulse.Y;
@@ -278,7 +289,7 @@ namespace Jitter.Dynamics
                 body2.linearVelocity.Y += (impulse.Y * body2.inverseMass);
                 body2.linearVelocity.Z += (impulse.Z * body2.inverseMass);
 
-                if (!body2IsMassPoint)
+                if (!body2IsMassPoint && considerAngularVelocity)
                 {
 
                     float num0, num1, num2;
@@ -357,27 +368,30 @@ namespace Jitter.Dynamics
                 body1.linearVelocity.Y -= (impulse.Y * body1.inverseMass);
                 body1.linearVelocity.Z -= (impulse.Z * body1.inverseMass);
 
-                float num0, num1, num2;
-                num0 = relativePos1.Y * impulse.Z - relativePos1.Z * impulse.Y;
-                num1 = relativePos1.Z * impulse.X - relativePos1.X * impulse.Z;
-                num2 = relativePos1.X * impulse.Y - relativePos1.Y * impulse.X;
+                if (considerAngularVelocity)
+                {
+                    float num0, num1, num2;
+                    num0 = relativePos1.Y * impulse.Z - relativePos1.Z * impulse.Y;
+                    num1 = relativePos1.Z * impulse.X - relativePos1.X * impulse.Z;
+                    num2 = relativePos1.X * impulse.Y - relativePos1.Y * impulse.X;
 
-                float num3 =
+                    float num3 =
                     (((num0 * body1.invInertiaWorld.M11) +
-                    (num1 * body1.invInertiaWorld.M21)) +
-                    (num2 * body1.invInertiaWorld.M31));
-                float num4 =
+                      (num1 * body1.invInertiaWorld.M21)) +
+                     (num2 * body1.invInertiaWorld.M31));
+                    float num4 =
                     (((num0 * body1.invInertiaWorld.M12) +
-                    (num1 * body1.invInertiaWorld.M22)) +
-                    (num2 * body1.invInertiaWorld.M32));
-                float num5 =
+                      (num1 * body1.invInertiaWorld.M22)) +
+                     (num2 * body1.invInertiaWorld.M32));
+                    float num5 =
                     (((num0 * body1.invInertiaWorld.M13) +
-                    (num1 * body1.invInertiaWorld.M23)) +
-                    (num2 * body1.invInertiaWorld.M33));
+                      (num1 * body1.invInertiaWorld.M23)) +
+                     (num2 * body1.invInertiaWorld.M33));
 
-                body1.angularVelocity.X -= num3;
-                body1.angularVelocity.Y -= num4;
-                body1.angularVelocity.Z -= num5;
+                    body1.angularVelocity.X -= num3;
+                    body1.angularVelocity.Y -= num4;
+                    body1.angularVelocity.Z -= num5;
+                }
             }
 
             if (!treatBody2AsStatic)
@@ -387,27 +401,30 @@ namespace Jitter.Dynamics
                 body2.linearVelocity.Y += (impulse.Y * body2.inverseMass);
                 body2.linearVelocity.Z += (impulse.Z * body2.inverseMass);
 
-                float num0, num1, num2;
-                num0 = relativePos2.Y * impulse.Z - relativePos2.Z * impulse.Y;
-                num1 = relativePos2.Z * impulse.X - relativePos2.X * impulse.Z;
-                num2 = relativePos2.X * impulse.Y - relativePos2.Y * impulse.X;
+                if (considerAngularVelocity)
+                {
+                    float num0, num1, num2;
+                    num0 = relativePos2.Y * impulse.Z - relativePos2.Z * impulse.Y;
+                    num1 = relativePos2.Z * impulse.X - relativePos2.X * impulse.Z;
+                    num2 = relativePos2.X * impulse.Y - relativePos2.Y * impulse.X;
 
-                float num3 =
+                    float num3 =
                     (((num0 * body2.invInertiaWorld.M11) +
-                    (num1 * body2.invInertiaWorld.M21)) +
-                    (num2 * body2.invInertiaWorld.M31));
-                float num4 =
+                      (num1 * body2.invInertiaWorld.M21)) +
+                     (num2 * body2.invInertiaWorld.M31));
+                    float num4 =
                     (((num0 * body2.invInertiaWorld.M12) +
-                    (num1 * body2.invInertiaWorld.M22)) +
-                    (num2 * body2.invInertiaWorld.M32));
-                float num5 =
+                      (num1 * body2.invInertiaWorld.M22)) +
+                     (num2 * body2.invInertiaWorld.M32));
+                    float num5 =
                     (((num0 * body2.invInertiaWorld.M13) +
-                    (num1 * body2.invInertiaWorld.M23)) +
-                    (num2 * body2.invInertiaWorld.M33));
+                      (num1 * body2.invInertiaWorld.M23)) +
+                     (num2 * body2.invInertiaWorld.M33));
 
-                body2.angularVelocity.X += num3;
-                body2.angularVelocity.Y += num4;
-                body2.angularVelocity.Z += num5;
+                    body2.angularVelocity.X += num3;
+                    body2.angularVelocity.Y += num4;
+                    body2.angularVelocity.Z += num5;
+                }
             }
 
 
@@ -490,13 +507,26 @@ namespace Jitter.Dynamics
         {
             float dvx, dvy, dvz;
 
-            dvx = (body2.angularVelocity.Y * relativePos2.Z) - (body2.angularVelocity.Z * relativePos2.Y) + body2.linearVelocity.X;
-            dvy = (body2.angularVelocity.Z * relativePos2.X) - (body2.angularVelocity.X * relativePos2.Z) + body2.linearVelocity.Y;
-            dvz = (body2.angularVelocity.X * relativePos2.Y) - (body2.angularVelocity.Y * relativePos2.X) + body2.linearVelocity.Z;
+            if (considerAngularVelocity)
+            {
+                dvx = (body2.angularVelocity.Y * relativePos2.Z) - (body2.angularVelocity.Z * relativePos2.Y) + body2.linearVelocity.X;
+                dvy = (body2.angularVelocity.Z * relativePos2.X) - (body2.angularVelocity.X * relativePos2.Z) + body2.linearVelocity.Y;
+                dvz = (body2.angularVelocity.X * relativePos2.Y) - (body2.angularVelocity.Y * relativePos2.X) + body2.linearVelocity.Z;
 
-            dvx = dvx - (body1.angularVelocity.Y * relativePos1.Z) + (body1.angularVelocity.Z * relativePos1.Y) - body1.linearVelocity.X;
-            dvy = dvy - (body1.angularVelocity.Z * relativePos1.X) + (body1.angularVelocity.X * relativePos1.Z) - body1.linearVelocity.Y;
-            dvz = dvz - (body1.angularVelocity.X * relativePos1.Y) + (body1.angularVelocity.Y * relativePos1.X) - body1.linearVelocity.Z;
+                dvx = dvx - (body1.angularVelocity.Y * relativePos1.Z) + (body1.angularVelocity.Z * relativePos1.Y) - body1.linearVelocity.X;
+                dvy = dvy - (body1.angularVelocity.Z * relativePos1.X) + (body1.angularVelocity.X * relativePos1.Z) - body1.linearVelocity.Y;
+                dvz = dvz - (body1.angularVelocity.X * relativePos1.Y) + (body1.angularVelocity.Y * relativePos1.X) - body1.linearVelocity.Z;
+            }
+            else
+            {
+                dvx = body2.linearVelocity.X;
+                dvy = body2.linearVelocity.Y;
+                dvz = body2.linearVelocity.Z;
+
+                dvx = dvx - body1.linearVelocity.X;
+                dvy = dvy - body1.linearVelocity.Y;
+                dvz = dvz - body1.linearVelocity.Z;
+            }
 
             float kNormal = 0.0f;
 
@@ -706,7 +736,7 @@ namespace Jitter.Dynamics
                 body1.linearVelocity.Y -= (impulse.Y * body1.inverseMass);
                 body1.linearVelocity.Z -= (impulse.Z * body1.inverseMass);
 
-                if (!body1IsMassPoint)
+                if (!body1IsMassPoint && considerAngularVelocity)
                 {
                     float num0, num1, num2;
                     num0 = relativePos1.Y * impulse.Z - relativePos1.Z * impulse.Y;
@@ -740,7 +770,7 @@ namespace Jitter.Dynamics
                 body2.linearVelocity.Y += (impulse.Y * body2.inverseMass);
                 body2.linearVelocity.Z += (impulse.Z * body2.inverseMass);
 
-                if (!body2IsMassPoint)
+                if (!body2IsMassPoint && considerAngularVelocity)
                 {
 
                     float num0, num1, num2;
@@ -807,6 +837,12 @@ namespace Jitter.Dynamics
 
             body1IsMassPoint = body1.isParticle;
             body2IsMassPoint = body2.isParticle;
+
+            considerAngularVelocity = true;
+            if (settings.considerAngularVelocityCallback != null)
+            {
+                considerAngularVelocity = settings.considerAngularVelocityCallback(body1, body2);
+            }
 
             // Material Properties
             if (newContact)
