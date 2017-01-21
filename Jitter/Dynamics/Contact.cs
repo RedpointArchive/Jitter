@@ -33,7 +33,7 @@ namespace Jitter.Dynamics
     #region public class ContactSettings
     public class ContactSettings
     {
-        public enum MaterialCoefficientMixingType { TakeMaximum, TakeMinimum, UseAverage }
+        public enum MaterialCoefficientMixingType { TakeMaximum, TakeMinimum, UseAverage, UseCallback }
 
         internal float maximumBias = 10.0f;
         internal float bias = 0.25f;
@@ -41,6 +41,9 @@ namespace Jitter.Dynamics
         internal float allowedPenetration = 0.01f;
         internal float breakThreshold = 0.01f;
         internal Func<RigidBody, RigidBody, bool> considerAngularVelocityCallback = null;
+        internal Func<RigidBody, RigidBody, float> calculateStaticFrictionCallback = null;
+        internal Func<RigidBody, RigidBody, float> calculateDynamicFrictionCallback = null;
+        internal Func<RigidBody, RigidBody, float> calculateRestitutionCallback = null;
 
         internal MaterialCoefficientMixingType materialMode = MaterialCoefficientMixingType.UseAverage;
 
@@ -60,6 +63,24 @@ namespace Jitter.Dynamics
         {
             get { return considerAngularVelocityCallback; }
             set { considerAngularVelocityCallback = value; }
+        }
+
+        public Func<RigidBody, RigidBody, float> CalculateStaticFrictionCallback
+        {
+            get { return calculateStaticFrictionCallback; }
+            set { calculateStaticFrictionCallback = value; }
+        }
+
+        public Func<RigidBody, RigidBody, float> CalculateDynamicFrictionCallback
+        {
+            get { return calculateDynamicFrictionCallback; }
+            set { calculateDynamicFrictionCallback = value; }
+        }
+
+        public Func<RigidBody, RigidBody, float> CalculateRestitutionCallback
+        {
+            get { return calculateRestitutionCallback; }
+            set { calculateRestitutionCallback = value; }
         }
     }
     #endregion
@@ -871,6 +892,11 @@ namespace Jitter.Dynamics
                         staticFriction = (body1.material.staticFriction + body2.material.staticFriction) / 2.0f;
                         dynamicFriction = (body1.material.kineticFriction + body2.material.kineticFriction) / 2.0f;
                         restitution = (body1.material.restitution + body2.material.restitution) / 2.0f;
+                        break;
+                    case ContactSettings.MaterialCoefficientMixingType.UseCallback:
+                        staticFriction = settings.calculateStaticFrictionCallback(body1, body2);
+                        dynamicFriction = settings.calculateDynamicFrictionCallback(body1, body2);
+                        restitution = settings.calculateRestitutionCallback(body1, body2);
                         break;
                 }
 
