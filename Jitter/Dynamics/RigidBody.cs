@@ -396,6 +396,32 @@ namespace Jitter.Dynamics
         public object Tag { get; set; }
 
         /// <summary>
+        /// Allows to set a weakly referenced user defined value to the body.
+        /// </summary>
+        public WeakReference<object> WeakTag { get; set; }
+
+        /// <summary>
+        /// Returns the value assigned in <see cref="WeakTag"/> or null if it is
+        /// garbage collected or unset.
+        /// </summary>
+        public object WeakTagOrNull
+        {
+            get
+            {
+                object o;
+                if (WeakTag == null)
+                {
+                    return null;
+                }
+                if (!WeakTag.TryGetTarget(out o))
+                {
+                    return null;
+                }
+                return o;
+            }
+        }
+
+        /// <summary>
         /// The shape the body is using.
         /// </summary>
         public Shape Shape 
