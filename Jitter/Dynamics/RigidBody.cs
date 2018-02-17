@@ -404,11 +404,22 @@ namespace Jitter.Dynamics
             set 
             {
                 // deregister update event
-                if(shape != null) shape.ShapeUpdated -= updatedHandler;
+                var prepForShapeUpdated = false;
+                if (shape != null)
+                {
+                    shape.ShapeUpdated -= updatedHandler;
+                    prepForShapeUpdated = true;
+                }
 
                 // register new event
                 shape = value; 
-                shape.ShapeUpdated += new ShapeUpdatedHandler(ShapeUpdated); 
+                shape.ShapeUpdated += new ShapeUpdatedHandler(ShapeUpdated);
+
+                if (prepForShapeUpdated)
+                {
+                    // immediately update shape because we changed shape instances.
+                    ShapeUpdated();
+                }
             } 
         }
 

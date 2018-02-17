@@ -152,6 +152,8 @@ namespace Jitter
 
         private Jitter.Collision.IslandManager islands = new IslandManager();
 
+        public RigidBody _rigidBodyOnce = null;
+
         private HashSet<RigidBody> rigidBodies = new HashSet<RigidBody>();
         private HashSet<Constraint> constraints = new HashSet<Constraint>();
         private HashSet<SoftBody> softbodies = new HashSet<SoftBody>();
@@ -574,7 +576,14 @@ namespace Jitter
 #else
             sw.Reset(); sw.Start();
             events.RaiseWorldPreStep(timestep);
-            foreach (RigidBody body in rigidBodies) body.PreStep(timestep);
+            if (_rigidBodyOnce != null)
+            {
+                _rigidBodyOnce.PreStep(timestep);
+            }
+            else
+            {
+                foreach (RigidBody body in rigidBodies) body.PreStep(timestep);
+            }
 
             sw.Stop(); debugTimes[(int)DebugType.PreStep] = sw.Elapsed.TotalMilliseconds;
 
@@ -622,7 +631,88 @@ namespace Jitter
             sw.Stop(); debugTimes[(int)DebugType.Integrate] = sw.Elapsed.TotalMilliseconds;
 
             sw.Reset(); sw.Start();
-            foreach (RigidBody body in rigidBodies) body.PostStep(timestep);
+            if (_rigidBodyOnce != null)
+            {
+                _rigidBodyOnce.PostStep(timestep);
+            }
+            else
+            {
+                foreach (RigidBody body in rigidBodies) body.PostStep(timestep);
+            }
+            events.RaiseWorldPostStep(timestep);
+            sw.Stop(); debugTimes[(int)DebugType.PostStep] = sw.Elapsed.TotalMilliseconds;
+#endif
+        }
+
+        /// <summary>
+        /// Integrates the whole world a timestep further in time.
+        /// </summary>
+        /// <param name="timestep">The timestep in seconds. 
+        /// It should be small as possible to keep the simulation stable.
+        /// The physics simulation shouldn't run slower than 60fps.
+        /// (timestep=1/60).</param>
+        /// <param name="multithread">If true the engine uses several threads to
+        /// integrate the world. This is faster on multicore CPUs.</param>
+        public void StepOne(float timestep, bool multithread, RigidBody body)
+        {
+            this.timestep = timestep;
+
+            // yeah! nothing to do!
+            if (timestep == 0.0f) return;
+
+            // throw exception if the timestep is smaller zero.
+            if (timestep < 0.0f) throw new ArgumentException("The timestep can't be negative.", "timestep");
+
+            // Calculate this
+            currentAngularDampFactor = (float)Math.Pow(angularDamping, timestep);
+            currentLinearDampFactor = (float)Math.Pow(linearDamping, timestep);
+
+#if (WINDOWS_PHONE)
+#error Not supported
+#else
+            sw.Reset(); sw.Start();
+            events.RaiseWorldPreStep(timestep);
+            body.PreStep(timestep);
+
+            sw.Stop(); debugTimes[(int)DebugType.PreStep] = sw.Elapsed.TotalMilliseconds;
+
+            sw.Reset(); sw.Start();
+            UpdateContacts();
+            sw.Stop(); debugTimes[(int)DebugType.UpdateContacts] = sw.Elapsed.TotalMilliseconds;
+
+            sw.Reset(); sw.Start();
+            double ms = 0;
+            while (removedArbiterQueue.Count > 0) islands.ArbiterRemoved(removedArbiterQueue.Dequeue());
+            sw.Stop(); ms = sw.Elapsed.TotalMilliseconds;
+
+            sw.Reset(); sw.Start();
+            CollisionSystem.Detect(multithread);
+            sw.Stop(); debugTimes[(int)DebugType.CollisionDetect] = sw.Elapsed.TotalMilliseconds;
+
+            sw.Reset(); sw.Start();
+
+            while (addedArbiterQueue.Count > 0) islands.ArbiterCreated(addedArbiterQueue.Dequeue());
+
+            sw.Stop(); debugTimes[(int)DebugType.BuildIslands] = sw.Elapsed.TotalMilliseconds + ms;
+
+            sw.Reset(); sw.Start();
+            CheckDeactivation();
+            sw.Stop(); debugTimes[(int)DebugType.DeactivateBodies] = sw.Elapsed.TotalMilliseconds;
+
+            sw.Reset(); sw.Start();
+            IntegrateForces();
+            sw.Stop(); debugTimes[(int)DebugType.IntegrateForces] = sw.Elapsed.TotalMilliseconds;
+
+            sw.Reset(); sw.Start();
+            HandleArbiter(contactIterations, multithread);
+            sw.Stop(); debugTimes[(int)DebugType.HandleArbiter] = sw.Elapsed.TotalMilliseconds;
+
+            sw.Reset(); sw.Start();
+            Integrate(multithread);
+            sw.Stop(); debugTimes[(int)DebugType.Integrate] = sw.Elapsed.TotalMilliseconds;
+
+            sw.Reset(); sw.Start();
+            body.PostStep(timestep);
             events.RaiseWorldPostStep(timestep);
             sw.Stop(); debugTimes[(int)DebugType.PostStep] = sw.Elapsed.TotalMilliseconds;
 #endif
@@ -784,31 +874,58 @@ namespace Jitter
 
         private void IntegrateForces()
         {
-            foreach (RigidBody body in rigidBodies)
+            if (_rigidBodyOnce != null)
             {
-                if (!body.isStatic && body.IsActive)
+                if (!_rigidBodyOnce.isStatic && _rigidBodyOnce.IsActive)
                 {
                     JVector temp;
-                    JVector.Multiply(ref body.force, body.inverseMass * timestep, out temp);
-                    JVector.Add(ref temp, ref body.linearVelocity, out body.linearVelocity);
+                    JVector.Multiply(ref _rigidBodyOnce.force, _rigidBodyOnce.inverseMass*timestep, out temp);
+                    JVector.Add(ref temp, ref _rigidBodyOnce.linearVelocity, out _rigidBodyOnce.linearVelocity);
 
-                    if (!(body.isParticle))
+                    if (!(_rigidBodyOnce.isParticle))
                     {
-                        JVector.Multiply(ref body.torque, timestep, out temp);
-                        JVector.Transform(ref temp, ref body.invInertiaWorld, out temp);
-                        JVector.Add(ref temp, ref body.angularVelocity, out body.angularVelocity);
+                        JVector.Multiply(ref _rigidBodyOnce.torque, timestep, out temp);
+                        JVector.Transform(ref temp, ref _rigidBodyOnce.invInertiaWorld, out temp);
+                        JVector.Add(ref temp, ref _rigidBodyOnce.angularVelocity, out _rigidBodyOnce.angularVelocity);
                     }
 
-                    if (body.affectedByGravity)
+                    if (_rigidBodyOnce.affectedByGravity)
                     {
                         JVector.Multiply(ref gravity, timestep, out temp);
-                        JVector.Add(ref body.linearVelocity, ref temp, out body.linearVelocity);
+                        JVector.Add(ref _rigidBodyOnce.linearVelocity, ref temp, out _rigidBodyOnce.linearVelocity);
                     }
                 }
 
-                body.force.MakeZero();
-                body.torque.MakeZero();
+                _rigidBodyOnce.force.MakeZero();
+                _rigidBodyOnce.torque.MakeZero();
+            }
+            else
+            {
+                foreach (RigidBody body in rigidBodies)
+                {
+                    if (!body.isStatic && body.IsActive)
+                    {
+                        JVector temp;
+                        JVector.Multiply(ref body.force, body.inverseMass * timestep, out temp);
+                        JVector.Add(ref temp, ref body.linearVelocity, out body.linearVelocity);
 
+                        if (!(body.isParticle))
+                        {
+                            JVector.Multiply(ref body.torque, timestep, out temp);
+                            JVector.Transform(ref temp, ref body.invInertiaWorld, out temp);
+                            JVector.Add(ref temp, ref body.angularVelocity, out body.angularVelocity);
+                        }
+
+                        if (body.affectedByGravity)
+                        {
+                            JVector.Multiply(ref gravity, timestep, out temp);
+                            JVector.Add(ref body.linearVelocity, ref temp, out body.linearVelocity);
+                        }
+                    }
+
+                    body.force.MakeZero();
+                    body.torque.MakeZero();
+                }
             }
         }
 
@@ -865,6 +982,13 @@ namespace Jitter
 
         private void Integrate(bool multithread)
         {
+            if (_rigidBodyOnce != null)
+            {
+                if (_rigidBodyOnce.isStatic || !_rigidBodyOnce.IsActive) return;
+                integrateCallback(_rigidBodyOnce);
+                return;
+            }
+
             if (multithread)
             {
                 foreach (RigidBody body in rigidBodies)
